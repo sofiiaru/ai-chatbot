@@ -14,12 +14,151 @@ datasource db {
 }
 
 model User {
-  id String @id
-  fullname String
-  clerkId String
-  type String
-  createdAt DateTime
-  updatedAt DateTime
-  stripeId String 
-  }
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fullname  String
+  clerkId   String
+  type      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  stripeId  String
+  billings  Billings[]
+  campaigns Campaign[]
+  domains   Domain[]
+}
 
+enum Plans {
+  STANDARD
+  PRO
+  ULTIMATE
+}
+
+model Billings {
+  id      String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  plan    Plans
+  credits Int
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String @db.Uuid
+}
+
+model Campaign {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  customers String[]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+  domains   Domain[]
+}
+
+model Domain {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  icon       String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String   @db.Uuid
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String   @db.Uuid
+
+  Chatbot         Chatbot[]
+  Helpdesk        Helpdesk[]
+  FilterQuestions FilterQuestions[]
+  Customer        Customer[]
+  Product         Product[]
+  Bookings        Bookings[]
+}
+
+model Chatbot {
+  id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  welcomeMessage String
+  icon           String
+  background     String
+  textColor      String
+  helpdesk       Boolean
+  domainId       String  @db.Uuid
+  domain         Domain  @relation(fields: [domainId], references: [id], onDelete: Cascade)
+}
+
+model Helpdesk {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question String
+  answer   String
+  domainId String @db.Uuid
+  domain   Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+}
+
+model FilterQuestions {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question String
+  answered String
+  domainId String @db.Uuid
+  domain   Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+}
+
+model Customer {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email    String @unique
+  domainId String @db.Uuid
+  domain   Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+  CustomerResponses CustomerResponses[]
+  ChatRoom          ChatRoom[]
+  Bookings          Bookings[]
+}
+
+model Product {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  price     Int
+  image     String
+  createdAt DateTime @default(now())
+  domainId  String   @db.Uuid
+  domain    Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
+}
+
+model CustomerResponses {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question   String
+  answered   String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String   @db.Uuid
+}
+
+model ChatRoom {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  live       Boolean
+  mailed     Boolean
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+  customerId String   @db.Uuid
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  ChatMessage ChatMessage[]
+}
+
+model Bookings {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  date       DateTime
+  slot       String
+  email      String
+  customerId String   @db.Uuid
+  customer   Customer @relation(fields: [customerId], references: [id])
+  domainId   String   @db.Uuid
+  domain     Domain   @relation(fields: [domainId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model ChatMessage {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  message    String
+  role       Role
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+  chatRoomId String   @db.Uuid
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id])
+  seen       Boolean
+}
+
+enum Role {
+  USER
+  ASSISTANT
+}
