@@ -16,11 +16,11 @@ datasource db {
 model User {
   id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   fullname  String
-  clerkId   String
+  clerkId   String @unique
   type      String
   createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  stripeId  String
+  updatedAt DateTime   @updatedAt @default(now())
+  stripeId  String?
   billings  Billings[]
   campaigns Campaign[]
   domains   Domain[]
